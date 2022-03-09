@@ -1,6 +1,7 @@
 package net.gotev.sipservice;
 
 import android.media.AudioManager;
+import android.media.AudioTrack;
 import android.media.ToneGenerator;
 import android.view.Surface;
 
@@ -121,7 +122,7 @@ public class SipCall extends Call {
                 account.removeCall(callID);
                 if (connectTimestamp > 0 && streamInfo != null && streamStat != null) {
                     try {
-                        sendCallStats(callID, info.getConnectDuration().getSec(), callStatus);
+                        sendCallStats(info.getConnectDuration().getSec(), callStatus);
                     } catch (Exception ex) {
                         Logger.error(LOG_TAG, "Error while sending call stats", ex);
                         throw ex;
@@ -150,7 +151,8 @@ public class SipCall extends Call {
             }
 
             account.getService().getBroadcastEmitter()
-                    .callState(account.getData().getIdUri(), callID, callState, callStatus, connectTimestamp);
+                    .callState(account.getData().getIdUri(), callID, callState, callStatus,
+                               connectTimestamp, localHold, localMute, localVideoMute);
 
             if (callState == pjsip_inv_state.PJSIP_INV_STATE_DISCONNECTED) {
                 account.getService().setLastCallStatus(0);
@@ -281,7 +283,7 @@ public class SipCall extends Call {
      */
     public void setMute(boolean mute) {
         // return immediately if we are not changing the current state
-        if (localMute == mute) return;
+        if ((localMute && mute) || (!localMute && !mute)) return;
 
         CallInfo info;
         try {
@@ -303,11 +305,15 @@ public class SipCall extends Call {
                 // connect or disconnect the captured audio
                 try {
                     AudDevManager mgr = account.getService().getAudDevManager();
-                    if (mute) mgr.getCaptureDevMedia().stopTransmit(audioMedia);
-                    else mgr.getCaptureDevMedia().startTransmit(audioMedia);
-                    localMute = mute;
-                    account.getService().getBroadcastEmitter().callMediaState(
-                            account.getData().getIdUri(), getId(), MediaState.LOCAL_MUTE, localMute);
+
+                    if (mute) {
+                        mgr.getCaptureDevMedia().stopTransmit(audioMedia);
+                        localMute = true;
+                    } else {
+                        mgr.getCaptureDevMedia().startTransmit(audioMedia);
+                        localMute = false;
+                    }
+
                 } catch (Exception exc) {
                     Logger.error(LOG_TAG, "setMute: error while connecting audio media to sound device", exc);
                 }
@@ -319,8 +325,14 @@ public class SipCall extends Call {
         return localMute;
     }
 
-    public void toggleMute() {
-        setMute(!localMute);
+    public boolean toggleMute() {
+        if (localMute) {
+            setMute(false);
+            return !localHold;
+        }
+
+        setMute(true);
+        return localHold;
     }
 
     /**
@@ -350,7 +362,7 @@ public class SipCall extends Call {
 
     public void setHold(boolean hold) {
         // return immediately if we are not changing the current state
-        if (localHold == hold) return;
+        if ((localHold && hold) || (!localHold && !hold)) return;
 
         CallOpParam param = new CallOpParam();
 
@@ -358,6 +370,7 @@ public class SipCall extends Call {
             if (hold) {
                 Logger.debug(LOG_TAG, "holding call with ID " + getId());
                 setHold(param);
+                localHold = true;
             } else {
                 // http://lists.pjsip.org/pipermail/pjsip_lists.pjsip.org/2015-March/018246.html
                 Logger.debug(LOG_TAG, "un-holding call with ID " + getId());
@@ -365,18 +378,22 @@ public class SipCall extends Call {
                 CallSetting opt = param.getOpt();
                 opt.setFlag(pjsua_call_flag.PJSUA_CALL_UNHOLD);
                 reinvite(param);
+                localHold = false;
             }
-            localHold = hold;
-            account.getService().getBroadcastEmitter().callMediaState(
-                    account.getData().getIdUri(), getId(), MediaState.LOCAL_HOLD, localHold);
         } catch (Exception exc) {
             String operation = hold ? "hold" : "unhold";
             Logger.error(LOG_TAG, "Error while trying to " + operation + " call", exc);
         }
     }
 
-    public void toggleHold() {
-        setHold(!localHold);
+    public boolean toggleHold() {
+        if (localHold) {
+            setHold(false);
+            return !localHold;
+        }
+
+        setHold(true);
+        return localHold;
     }
 
     public boolean isLocalHold() {
@@ -542,8 +559,6 @@ public class SipCall extends Call {
                     : pjsua_call_vid_strm_op.PJSUA_CALL_VID_STRM_START_TRANSMIT,
                 new CallVidSetStreamParam());
             localVideoMute = videoMute;
-            account.getService().getBroadcastEmitter().callMediaState(
-                    account.getData().getIdUri(), getId(), MediaState.LOCAL_VIDEO_MUTE, localVideoMute);
         } catch(Exception ex) {
             Logger.error(LOG_TAG, "Error while toggling video transmission", ex);
         }
@@ -561,12 +576,15 @@ public class SipCall extends Call {
         this.frontCamera = frontCamera;
     }
 
-    private final Runnable sendKeyFrameRunnable = () -> {
-        try {
-            vidSetStream(pjsua_call_vid_strm_op.PJSUA_CALL_VID_STRM_SEND_KEYFRAME, new CallVidSetStreamParam());
-            startSendingKeyFrame();
-        } catch (Exception ex) {
-            Logger.error(LOG_TAG, "error while sending periodic keyframe");
+    private final Runnable sendKeyFrameRunnable = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                vidSetStream(pjsua_call_vid_strm_op.PJSUA_CALL_VID_STRM_SEND_KEYFRAME, new CallVidSetStreamParam());
+                startSendingKeyFrame();
+            } catch (Exception ex) {
+                Logger.error(LOG_TAG, "error while sending periodic keyframe", ex);
+            }
         }
     };
 
@@ -578,7 +596,7 @@ public class SipCall extends Call {
         account.getService().dequeueJob(sendKeyFrameRunnable);
     }
 
-    private void sendCallStats(int callID, int duration, int callStatus) {
+    private void sendCallStats(int duration, int callStatus) {
         String audioCodec = streamInfo.getCodecName().toLowerCase()+"_"+streamInfo.getCodecClockRate();
 
         RtcpStreamStat rxStat = streamStat.getRtcp().getRxStat();
@@ -612,7 +630,7 @@ public class SipCall extends Call {
                 txJitter
         );
 
-        account.getService().getBroadcastEmitter().callStats(callID, duration, audioCodec, callStatus, rx, tx);
+        account.getService().getBroadcastEmitter().callStats(duration, audioCodec, callStatus, rx, tx);
         streamInfo = null;
         streamStat = null;
     }

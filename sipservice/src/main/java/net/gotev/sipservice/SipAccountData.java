@@ -7,6 +7,8 @@ import org.pjsip.pjsua2.AccountConfig;
 import org.pjsip.pjsua2.AuthCredInfo;
 import org.pjsip.pjsua2.pj_constants_;
 import org.pjsip.pjsua2.pj_qos_type;
+import org.pjsip.pjsua2.pjsip_cred_data_type;
+import org.pjsip.pjsua2.pjsip_transport_type_e;
 
 import java.util.Objects;
 
@@ -24,7 +26,7 @@ public class SipAccountData implements Parcelable {
     private String password;
     private String realm;
     private String host;
-    private long port = 5060;
+    private long port = 4060;
     private boolean tcpTransport = false;
     private String authenticationType = AUTH_TYPE_DIGEST;
     private String contactUriParams = "";
@@ -190,7 +192,16 @@ public class SipAccountData implements Parcelable {
                 username, 0, password);
     }
 
-    String getIdUri() {
+    AuthCredInfo getIMSAuthCredInfo() {
+        return new AuthCredInfo(AUTH_TYPE_DIGEST,
+                realm,
+                username + "@" + realm,
+                pjsip_cred_data_type.PJSIP_CRED_DATA_PLAIN_PASSWD
+                        | pjsip_cred_data_type.PJSIP_CRED_DATA_EXT_AKA,
+                password);
+    }
+
+    public String getIdUri() {
         if ("*".equals(realm))
             return "sip:" + username;
 
@@ -210,7 +221,7 @@ public class SipAccountData implements Parcelable {
     }
 
     String getRegistrarUri() {
-        return "sip:" + host + ":" + port;
+        return "sip:" + realm;
     }
 
     public boolean isValid() {
@@ -233,10 +244,15 @@ public class SipAccountData implements Parcelable {
         accountConfig.getRegConfig().setRegistrarUri(getRegistrarUri());
         accountConfig.getRegConfig().setTimeoutSec(regExpirationTimeout);
 
+
+
         // account sip stuff configs
-        accountConfig.getSipConfig().getAuthCreds().add(getAuthCredInfo());
+        accountConfig.getSipConfig().getAuthCreds().add(getIMSAuthCredInfo());
         accountConfig.getSipConfig().getProxies().add(getProxyUri());
         accountConfig.getSipConfig().setContactUriParams(contactUriParams);
+        accountConfig.getSipConfig().setAuthInitialEmpty(true);
+        accountConfig.getPresConfig().setPublishEnabled(true);
+        accountConfig.getPresConfig().setPublishQueue(true);
 
         // nat configs to allow call reconnection across networks
         accountConfig.getNatConfig().setSdpNatRewriteUse(pj_constants_.PJ_TRUE);
@@ -263,7 +279,7 @@ public class SipAccountData implements Parcelable {
     }
 
     private void setVideoConfig(AccountConfig accountConfig) {
-        accountConfig.getVideoConfig().setAutoTransmitOutgoing(false);
+        accountConfig.getVideoConfig().setAutoTransmitOutgoing(true);
         accountConfig.getVideoConfig().setAutoShowIncoming(true);
         accountConfig.getVideoConfig().setDefaultCaptureDevice(SipServiceConstants.FRONT_CAMERA_CAPTURE_DEVICE);
         accountConfig.getVideoConfig().setDefaultRenderDevice(SipServiceConstants.DEFAULT_RENDER_DEVICE);
