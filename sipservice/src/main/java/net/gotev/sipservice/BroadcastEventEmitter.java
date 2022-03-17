@@ -28,6 +28,7 @@ public class BroadcastEventEmitter implements SipServiceConstants {
         REGISTRATION,
         INCOMING_CALL,
         CALL_STATE,
+        CALL_MEDIA_STATE,
         OUTGOING_CALL,
         STACK_STATUS,
         CODEC_PRIORITIES,
@@ -106,8 +107,7 @@ public class BroadcastEventEmitter implements SipServiceConstants {
         intent.putExtra(PARAM_IS_VIDEO, isVideo);
         intent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
 
-//        sendExplicitBroadcast(intent);
-        mContext.sendBroadcast(intent);
+        sendExplicitBroadcast(intent);
     }
 
     /**
@@ -132,12 +132,8 @@ public class BroadcastEventEmitter implements SipServiceConstants {
      * @param callStateCode SIP call state code
      * @param callStateStatus SIP call state status
      * @param connectTimestamp call start timestamp
-     * @param isLocalHold true if the call is held locally
-     * @param isLocalMute true if the call is muted locally
-     * @param isLocalVideoMute true if the video is muted locally
      */
-    public synchronized void callState(String accountID, int callID, int callStateCode, int callStateStatus,
-                          long connectTimestamp, boolean isLocalHold, boolean isLocalMute, boolean isLocalVideoMute) {
+    public synchronized void callState(String accountID, int callID, int callStateCode, int callStateStatus, long connectTimestamp) {
         final Intent intent = new Intent();
 
         intent.setAction(getAction(BroadcastAction.CALL_STATE));
@@ -146,22 +142,37 @@ public class BroadcastEventEmitter implements SipServiceConstants {
         intent.putExtra(PARAM_CALL_STATE, callStateCode);
         intent.putExtra(PARAM_CALL_STATUS, callStateStatus);
         intent.putExtra(PARAM_CONNECT_TIMESTAMP, connectTimestamp);
-        intent.putExtra(PARAM_LOCAL_HOLD, isLocalHold);
-        intent.putExtra(PARAM_LOCAL_MUTE, isLocalMute);
-        intent.putExtra(PARAM_LOCAL_VIDEO_MUTE, isLocalVideoMute);
 
         mContext.sendBroadcast(intent);
     }
 
-    public void outgoingCall(String accountID, int callID, String number, boolean isVideo, boolean isVideoConference) {
+    /**
+      * Emit a call state broadcast intent.
+      * @param accountID call's account IdUri
+      * @param callID call ID number
+      * @param state MediaState state updated
+      * @param value call media state update value
+      */
+    public synchronized void callMediaState(String accountID, int callID, MediaState state, boolean value) {
+        final Intent intent = new Intent()
+                .setAction(getAction(BroadcastAction.CALL_MEDIA_STATE))
+                .putExtra(PARAM_ACCOUNT_ID, accountID)
+                .putExtra(PARAM_CALL_ID, callID)
+                .putExtra(PARAM_MEDIA_STATE_KEY, state)
+                .putExtra(PARAM_MEDIA_STATE_VALUE, value);
+        mContext.sendBroadcast(intent);
+    }
+
+    public void outgoingCall(String accountID, int callID, String number, boolean isVideo, boolean isVideoConference, boolean isTransfer) {
         final Intent intent = new Intent();
 
-        intent.setAction(getAction(BroadcastAction.OUTGOING_CALL));
-        intent.putExtra(PARAM_ACCOUNT_ID, accountID);
-        intent.putExtra(PARAM_CALL_ID, callID);
-        intent.putExtra(PARAM_NUMBER, number);
-        intent.putExtra(PARAM_IS_VIDEO, isVideo);
-        intent.putExtra(PARAM_IS_VIDEO_CONF, isVideoConference);
+        intent.setAction(getAction(BroadcastAction.OUTGOING_CALL))
+                .putExtra(PARAM_ACCOUNT_ID, accountID)
+                .putExtra(PARAM_CALL_ID, callID)
+                .putExtra(PARAM_NUMBER, number)
+                .putExtra(PARAM_IS_VIDEO, isVideo)
+                .putExtra(PARAM_IS_VIDEO_CONF, isVideoConference)
+                .putExtra(PARAM_IS_TRANSFER, isTransfer);
 
         sendExplicitBroadcast(intent);
     }
@@ -213,15 +224,15 @@ public class BroadcastEventEmitter implements SipServiceConstants {
         mContext.sendBroadcast(intent);
     }
 
-    void callStats(int duration, String audioCodec, int callStateStatus, RtpStreamStats rx, RtpStreamStats tx) {
-        final Intent intent = new Intent();
-
-        intent.setAction(getAction(BroadcastAction.CALL_STATS));
-        intent.putExtra(PARAM_CALL_STATS_DURATION, duration);
-        intent.putExtra(PARAM_CALL_STATS_AUDIO_CODEC, audioCodec);
-        intent.putExtra(PARAM_CALL_STATS_CALL_STATUS, callStateStatus);
-        intent.putExtra(PARAM_CALL_STATS_RX_STREAM, rx);
-        intent.putExtra(PARAM_CALL_STATS_TX_STREAM, tx);
+    void callStats(int callID, int duration, String audioCodec, int callStateStatus, RtpStreamStats rx, RtpStreamStats tx) {
+        final Intent intent = new Intent()
+                .setAction(getAction(BroadcastAction.CALL_STATS))
+                .putExtra(PARAM_CALL_ID, callID)
+                .putExtra(PARAM_CALL_STATS_DURATION, duration)
+                .putExtra(PARAM_CALL_STATS_AUDIO_CODEC, audioCodec)
+                .putExtra(PARAM_CALL_STATS_CALL_STATUS, callStateStatus)
+                .putExtra(PARAM_CALL_STATS_RX_STREAM, rx)
+                .putExtra(PARAM_CALL_STATS_TX_STREAM, tx);
 
         mContext.sendBroadcast(intent);
     }

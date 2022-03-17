@@ -25,6 +25,7 @@ public class SharedPreferencesHelper {
     private final String PREFS_KEY_DND = "dnd_pref";
     private final String PREFS_KEY_ENCRYPTION_ENABLED = "encryption_enabled";
     private final String PREFS_KEY_KEYSTORE_ALIAS = "keystore_alias";
+    private final String PREFS_KEY_OBFUSCATION_ENABLED = "obfuscation_enabled";
 
     private final SharedPreferences sharedPreferences;
     private final Gson gson;
@@ -91,6 +92,18 @@ public class SharedPreferencesHelper {
             handleMigration(wasEncryptionEnabled);
         }
         sharedPreferences.edit().putBoolean(PREFS_KEY_ENCRYPTION_ENABLED, enableEncryption).apply();
+    }
+
+    void setObfuscation(boolean obfuscate) {
+        sharedPreferences.edit().putBoolean(PREFS_KEY_OBFUSCATION_ENABLED, obfuscate).apply();
+    }
+
+    /**
+     * Whether the string obfuscation is enabled in logs
+     * @return what is set in {@link #setObfuscation(boolean)} or true in release builds and false in debug ones
+     */
+    boolean isObfuscationEnabled() {
+        return sharedPreferences.getBoolean(PREFS_KEY_OBFUSCATION_ENABLED, !BuildConfig.DEBUG);
     }
 
     /**

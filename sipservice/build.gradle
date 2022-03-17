@@ -1,13 +1,13 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 30
+    compileSdk 31
     buildToolsVersion "30.0.3"
 
     defaultConfig {
         minSdkVersion 21
-        targetSdkVersion 29
-        versionCode 22
+        targetSdkVersion 31
+        versionCode 23
         versionName "2.7.0"
     }
     buildTypes {
@@ -20,6 +20,11 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'com.google.code.gson:gson:2.8.6'
+    implementation 'com.google.code.gson:gson:2.8.7'
     implementation "com.github.voismart:crypto:0.1.0"
+
+    // WorkManager
+    implementation "androidx.work:work-runtime:2.7.1"
+    implementation "androidx.work:work-multiprocess:2.7.1"
+
 }
