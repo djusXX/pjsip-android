@@ -5,6 +5,7 @@ import android.os.Parcelable;
 
 import org.pjsip.pjsua2.AccountConfig;
 import org.pjsip.pjsua2.AuthCredInfo;
+import org.pjsip.pjsua2.DigestCredential;
 import org.pjsip.pjsua2.pj_constants_;
 import org.pjsip.pjsua2.pj_qos_type;
 import org.pjsip.pjsua2.pjsip_cred_data_type;
@@ -193,12 +194,26 @@ public class SipAccountData implements Parcelable {
     }
 
     AuthCredInfo getIMSAuthCredInfo() {
-        return new AuthCredInfo(AUTH_TYPE_DIGEST,
+        AuthCredInfo ret =  new AuthCredInfo(AUTH_TYPE_DIGEST,
                 realm,
                 username + "@" + realm,
-                pjsip_cred_data_type.PJSIP_CRED_DATA_PLAIN_PASSWD
+                pjsip_cred_data_type.PJSIP_CRED_DATA_DIGEST
                         | pjsip_cred_data_type.PJSIP_CRED_DATA_EXT_AKA,
                 password);
+
+
+        ret.setAkaK(password);
+
+        return ret;
+    }
+
+    DigestCredential getDigestCred() {
+        DigestCredential cred = new DigestCredential();
+        cred.setUsername(username);
+        cred.setUri(getIdUri());
+        cred.setRealm(realm);
+
+        return cred;
     }
 
     public String getIdUri() {
@@ -237,10 +252,10 @@ public class SipAccountData implements Parcelable {
         // account configs
         accountConfig.setIdUri(getIdUri());
 
-        // account registration stuff configs
-        if (callId != null && !callId.isEmpty()) {
-            accountConfig.getRegConfig().setCallID(callId);
-        }
+//        // account registration stuff configs
+//        if (callId != null && !callId.isEmpty()) {
+//            accountConfig.getRegConfig(). setCallID(callId);
+//        }
         accountConfig.getRegConfig().setRegistrarUri(getRegistrarUri());
         accountConfig.getRegConfig().setTimeoutSec(regExpirationTimeout);
 

@@ -14,6 +14,7 @@ import org.pjsip.pjsua2.CallOpParam;
 import org.pjsip.pjsua2.CallSetting;
 import org.pjsip.pjsua2.CallVidSetStreamParam;
 import org.pjsip.pjsua2.Media;
+import org.pjsip.pjsua2.MediaSize;
 import org.pjsip.pjsua2.OnCallMediaEventParam;
 import org.pjsip.pjsua2.OnCallMediaStateParam;
 import org.pjsip.pjsua2.OnCallStateParam;
@@ -25,6 +26,7 @@ import org.pjsip.pjsua2.VideoPreview;
 import org.pjsip.pjsua2.VideoPreviewOpParam;
 import org.pjsip.pjsua2.VideoWindow;
 import org.pjsip.pjsua2.VideoWindowHandle;
+import org.pjsip.pjsua2.VideoWindowInfo;
 import org.pjsip.pjsua2.pjmedia_event_type;
 import org.pjsip.pjsua2.pjmedia_type;
 import org.pjsip.pjsua2.pjsip_inv_state;
@@ -166,6 +168,7 @@ public class SipCall extends Call {
 
     @Override
     public void onCallMediaState(OnCallMediaStateParam prm) {
+//        Logger.debug(LOG_TAG, "===============================\n\n" + prm.toString());
 
         CallInfo info;
         try {
@@ -183,12 +186,14 @@ public class SipCall extends Call {
                     && media != null
                     && mediaInfo.getStatus() == pjsua_call_media_status.PJSUA_CALL_MEDIA_ACTIVE) {
 
+//                Logger.debug(LOG_TAG, "===============================\n handleAudioMedia(media); \n");
                 handleAudioMedia(media);
 
             } else if (mediaInfo.getType() == pjmedia_type.PJMEDIA_TYPE_VIDEO
                     && mediaInfo.getStatus() == pjsua_call_media_status.PJSUA_CALL_MEDIA_ACTIVE
                     && mediaInfo.getVideoIncomingWindowId() != pjsua2.INVALID_ID) {
 
+//                Logger.debug(LOG_TAG, "===============================\n handleVideoMedia(mediaInfo); \n");
                 handleVideoMedia(mediaInfo);
             }
         }
@@ -439,10 +444,11 @@ public class SipCall extends Call {
         if (!videoConference) {
             // Since 2.9 pjsip will not start capture device if autoTransmit is false
             // thus mediaInfo.getVideoCapDev() always returns -3 -> NULL
-            // mVideoPreview = new VideoPreview(mediaInfo.getVideoCapDev());
-            mVideoPreview = new VideoPreview(SipServiceConstants.FRONT_CAMERA_CAPTURE_DEVICE);
+            mVideoPreview = new VideoPreview(mediaInfo.getVideoCapDev());
+            // mVideoPreview = new VideoPreview(SipServiceConstants.FRONT_CAMERA_CAPTURE_DEVICE);
         }
         mVideoWindow = new VideoWindow(mediaInfo.getVideoIncomingWindowId());
+//        Logger.debug(LOG_TAG, "================================\n\n new VideoWindow(mediaInfo.getVideoIncomingWindowId()):" + mVideoWindow);
     }
 
     public VideoWindow getVideoWindow() {
@@ -467,7 +473,9 @@ public class SipCall extends Call {
     }
 
     public void setIncomingVideoFeed(Surface surface) {
+//        Logger.debug(LOG_TAG, "================================\n\n setIncomingVideoFeed()");
         if (mVideoWindow != null) {
+//            Logger.debug(LOG_TAG, "================================\n\n mVideoWindow != null");
             VideoWindowHandle videoWindowHandle = new VideoWindowHandle();
             videoWindowHandle.getHandle().setWindow(surface);
             try {
@@ -481,7 +489,9 @@ public class SipCall extends Call {
             } catch (Exception ex) {
                 Logger.error(LOG_TAG, "Unable to setup Incoming Video Feed", ex);
             }
+
         }
+//        Logger.debug(LOG_TAG, "================================\n\n EXITED mVideoWindow != null");
     }
 
     public void startPreviewVideoFeed(Surface surface) {
@@ -536,7 +546,7 @@ public class SipCall extends Call {
     private void setMediaParams(CallOpParam param) {
         CallSetting callSetting = param.getOpt();
         callSetting.setAudioCount(1);
-        callSetting.setVideoCount(videoCall ? 1 : 0);
+        callSetting.setVideoCount(videoCall ? 2 : 0);
     }
 
     public void setVideoMute(boolean videoMute) {

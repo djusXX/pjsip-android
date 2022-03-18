@@ -74,6 +74,7 @@ public interface SipServiceConstants {
     String PARAM_SIP_CONTACTS_ARRAY = "sipContactsArray";
     String PARAM_BUDDY_DATA = "buddyData";
     String PARAM_BUDDY_LIST = "BuddyList";
+    String PARAM_AKA_AUTH = "isAkaAuth";
 
 
     /**

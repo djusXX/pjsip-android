@@ -13,10 +13,12 @@ import org.pjsip.pjsua2.CallVidSetStreamParam;
 import org.pjsip.pjsua2.CodecFmtpVector;
 import org.pjsip.pjsua2.CodecInfo;
 import org.pjsip.pjsua2.CodecInfoVector2;
+import org.pjsip.pjsua2.DigestCredential;
 import org.pjsip.pjsua2.Endpoint;
 import org.pjsip.pjsua2.EpConfig;
 import org.pjsip.pjsua2.IpChangeParam;
 import org.pjsip.pjsua2.MediaFormatVideo;
+import org.pjsip.pjsua2.OnCredAuthParam;
 import org.pjsip.pjsua2.SendInstantMessageParam;
 import org.pjsip.pjsua2.TransportConfig;
 import org.pjsip.pjsua2.VidCodecParam;
@@ -652,6 +654,12 @@ public class SipService extends BackgroundService implements SipServiceConstants
         }
     }
 
+    public void handleAuthAKA(DigestCredential digestCred) {
+        OnCredAuthParam credAuthParam = new OnCredAuthParam();
+        credAuthParam.setDigestCredential(digestCred);
+        mEndpoint.onCredAuth(credAuthParam);
+    }
+
     public void setLastCallStatus(int callStatus) {
         this.callStatus = callStatus;
     }
@@ -747,6 +755,7 @@ public class SipService extends BackgroundService implements SipServiceConstants
 
     private void handleSetAccount(Intent intent) {
         SipAccountData data = intent.getParcelableExtra(PARAM_ACCOUNT_DATA);
+        boolean isAKAAuth = intent.getBooleanExtra(PARAM_AKA_AUTH, false);
 
         int index = mConfiguredAccounts.indexOf(data);
         if (index == -1) {
@@ -774,10 +783,17 @@ public class SipService extends BackgroundService implements SipServiceConstants
                 Logger.error(TAG, "Error while reconfiguring " + getValue(getApplicationContext(), data.getIdUri()), exc);
             }
         }
+
+        if (isAKAAuth) {
+            Logger.debug(TAG, "Handle Digest AKA authorization");
+            handleAuthAKA(data.getDigestCred());
+        }
     }
 
     private void handleGetRegistrationStatus(Intent intent) {
         String accountID = intent.getStringExtra(PARAM_ACCOUNT_ID);
+
+
 
         if (!mStarted || mActiveSipAccounts.get(accountID) == null) {
             mBroadcastEmitter.registrationState("", 400);
@@ -895,6 +911,8 @@ public class SipService extends BackgroundService implements SipServiceConstants
             mediaFormatVideo.setWidth(H264_DEF_WIDTH);
             mediaFormatVideo.setHeight(H264_DEF_HEIGHT);
             vidCodecParam.setEncFmt(mediaFormatVideo);
+
+
 
             for (int i = 0; i < codecFmtpVector.size(); i++) {
                 if (PROFILE_LEVEL_ID_HEADER.equals(codecFmtpVector.get(i).getName())) {
@@ -1203,7 +1221,7 @@ public class SipService extends BackgroundService implements SipServiceConstants
                 return;
             }
         }
-        Logger.debug(TAG, "Successfully added all buddies to " + accountID + " buddy list");
+        Logger.debug(TAG, "Successfully added all buddies from list to " + accountID + " buddy list");
     }
 
 }

@@ -27,7 +27,7 @@ public class SipServiceCommand implements SipServiceConstants {
      * @param sipAccount sip account data
      * @return sip account ID uri as a string
      */
-    public static String setAccount(Context context, SipAccountData sipAccount) {
+    public static String setAccount(Context context, SipAccountData sipAccount, boolean isAKAAuth) {
         if (sipAccount == null) {
             throw new IllegalArgumentException("sipAccount MUST not be null!");
         }
@@ -38,6 +38,7 @@ public class SipServiceCommand implements SipServiceConstants {
         Intent intent = new Intent(context, SipService.class);
         intent.setAction(ACTION_SET_ACCOUNT);
         intent.putExtra(PARAM_ACCOUNT_DATA, sipAccount);
+        intent.putExtra(PARAM_AKA_AUTH, isAKAAuth);
         context.startService(intent);
 
         return accountID;

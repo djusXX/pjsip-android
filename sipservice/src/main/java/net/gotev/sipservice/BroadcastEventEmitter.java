@@ -107,7 +107,8 @@ public class BroadcastEventEmitter implements SipServiceConstants {
         intent.putExtra(PARAM_IS_VIDEO, isVideo);
         intent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
 
-        sendExplicitBroadcast(intent);
+//        sendExplicitBroadcast(intent);
+        mContext.sendBroadcast(intent);
     }
 
     /**
@@ -174,7 +175,8 @@ public class BroadcastEventEmitter implements SipServiceConstants {
                 .putExtra(PARAM_IS_VIDEO_CONF, isVideoConference)
                 .putExtra(PARAM_IS_TRANSFER, isTransfer);
 
-        sendExplicitBroadcast(intent);
+//        sendExplicitBroadcast(intent);
+        mContext.sendBroadcast(intent);
     }
 
     public void stackStatus(boolean started) {
