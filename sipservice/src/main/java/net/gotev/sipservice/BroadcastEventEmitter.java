@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 
+import org.pjsip.pjsua2.BuddyInfo;
 import org.pjsip.pjsua2.OnBuddyEvSubStateParam;
 
 import java.util.ArrayList;
@@ -50,12 +51,14 @@ public class BroadcastEventEmitter implements SipServiceConstants {
         return NAMESPACE + "." + action;
     }
 
-    public void buddyState(SipBuddy sipBuddy) {
+    public void buddyState(String ownerSipUri, String buddyUri, String presState, String presText) {
         final Intent intent = new Intent();
 
         intent.setAction(getAction(BroadcastAction.BUDDY_PRESENCE_CHANGE));
-        intent.putExtra(PARAM_CONTACT_URI, sipBuddy.getData().getBuddyUri());
-        intent.putExtra(PARAM_DISPLAY_NAME, sipBuddy.getData().getDisplayName());
+        intent.putExtra(PARAM_ACCOUNT_ID, ownerSipUri);
+        intent.putExtra(PARAM_CONTACT_URI, buddyUri);
+        intent.putExtra(PARAM_PRESENCE_STATUS, presState);
+        intent.putExtra(PARAM_PRESENCE_TEXT, presText);
 
 //        sendExplicitBroadcast(intent);
         mContext.sendBroadcast(intent);
@@ -72,9 +75,9 @@ public class BroadcastEventEmitter implements SipServiceConstants {
         mContext.sendBroadcast(intent);
     }
 
-    public void buddySubscriptionState(SipBuddy buddy, OnBuddyEvSubStateParam e) {
-//        TODO: implement!!!!!!!!!!!!!!
-    }
+//    public void buddySubscriptionState(SipBuddy buddy, OnBuddyEvSubStateParam e) {
+////        TODO: implement!!!!!!!!!!!!!!
+//    }
 
     public void messageReceived(String from, String to, String body) {
         final Intent intent = new Intent();

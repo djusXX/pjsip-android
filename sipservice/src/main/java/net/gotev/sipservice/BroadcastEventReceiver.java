@@ -94,7 +94,10 @@ public class BroadcastEventReceiver extends BroadcastReceiver implements SipServ
             onCallReconnectionState((CallReconnectionState) intent.getSerializableExtra(PARAM_CALL_RECONNECTION_STATE));
 
         } else if (BroadcastEventEmitter.getAction(BroadcastEventEmitter.BroadcastAction.BUDDY_PRESENCE_CHANGE).equals(action)) {
-            onBuddyState(intent.getStringExtra(PARAM_CONTACT_URI));
+            onBuddyState(intent.getStringExtra(PARAM_ACCOUNT_ID),
+                    intent.getStringExtra(PARAM_CONTACT_URI),
+                    intent.getStringExtra(PARAM_PRESENCE_STATUS),
+                    intent.getStringExtra(PARAM_PRESENCE_TEXT));
 
         } else if (BroadcastEventEmitter.getAction(BroadcastEventEmitter.BroadcastAction.BUDDY_ADDED).equals(action)) {
             onBuddyAdded(intent.getStringExtra(PARAM_ACCOUNT_ID), intent.getParcelableExtra(PARAM_BUDDY_DATA));
@@ -224,8 +227,8 @@ public class BroadcastEventReceiver extends BroadcastReceiver implements SipServ
         Logger.debug(LOG_TAG, "Call reconnection state " + state.name());
     }
 
-    protected void onBuddyState(String contactUri) {
-        Logger.debug(LOG_TAG, "State changed for :" + contactUri);
+    protected void onBuddyState(String ownerSipUri, String contactUri, String presStatus, String presText) {
+        Logger.debug(LOG_TAG, "Buddy state changed [" + contactUri + "|" + presStatus + "|" + presText + "]");
     }
 
     protected void onBuddyAdded(String accountID, SipBuddyData buddyData) {

@@ -15,7 +15,9 @@ public class SipBuddyData implements Parcelable {
 
     private String displayName;
     private String sipUri;
-    private boolean subscribe = false;
+    private boolean subscribe = true;
+//    private String presenceState;
+//    private String presenceText;
 
     public SipBuddyData() { }
 
@@ -38,12 +40,16 @@ public class SipBuddyData implements Parcelable {
         dest.writeString(displayName);
         dest.writeString(sipUri);
         dest.writeByte((byte) (subscribe ? 1 : 0));
+//        dest.writeString(presenceState);
+//        dest.writeString(presenceText);
     }
 
     protected SipBuddyData(Parcel in) {
         displayName = in.readString();
         sipUri = in.readString();
         subscribe = (in.readByte() == 1);
+//        presenceState = in.readString();
+//        presenceText = in.readString();
     }
 
     @Override
@@ -94,6 +100,8 @@ public class SipBuddyData implements Parcelable {
         if (!Objects.equals(displayName, that.displayName)) return false;
         if (!Objects.equals(sipUri, that.sipUri)) return false;
         if (subscribe != that.subscribe) return false;
+//        if (!Objects.equals(presenceState, that.presenceState)) return false;
+//        if (!Objects.equals(presenceText, that.presenceText)) return false;
 
         return true;
     }
@@ -103,6 +111,8 @@ public class SipBuddyData implements Parcelable {
         int result = displayName.hashCode();
         result = 31 * result + sipUri.hashCode();
         result = 31 * result + (subscribe ? 1 : 0);
+//        result = 31 * result + presenceState.hashCode();
+//        result = 31 * result + presenceText.hashCode();
         return result;
     }
 
